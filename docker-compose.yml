@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: modulo_landing_forms
+    environment:
+      POSTGRES_DB: landing_forms_db
+      POSTGRES_USER: omni
+      POSTGRES_PASSWORD: omni123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+    name: landing_forms_pgdata
