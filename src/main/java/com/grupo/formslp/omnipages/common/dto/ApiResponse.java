@@ -1,4 +1,4 @@
-package com.grupo.formslp.omnipages.chatbot.dto;
+package com.grupo.formslp.omnipages.common.dto;
 
 import java.util.List;
 

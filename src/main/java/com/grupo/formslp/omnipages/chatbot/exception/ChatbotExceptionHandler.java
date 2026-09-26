@@ -1,7 +1,7 @@
 package com.grupo.formslp.omnipages.chatbot.exception;
 
 import com.grupo.formslp.omnipages.chatbot.controller.PublicChatController;
-import com.grupo.formslp.omnipages.chatbot.dto.ApiResponse;
+import com.grupo.formslp.omnipages.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;

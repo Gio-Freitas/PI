@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
+import com.grupo.formslp.omnipages.form.enums.FieldType;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -36,8 +37,9 @@ public class FormField {
     @Column(nullable = false)
     private String label;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String type;
+    private FieldType type;
 
     @Column(name = "position", nullable = false)
     private Integer position;

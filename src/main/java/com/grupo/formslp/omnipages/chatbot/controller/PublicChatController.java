@@ -1,6 +1,6 @@
 package com.grupo.formslp.omnipages.chatbot.controller;
 
-import com.grupo.formslp.omnipages.chatbot.dto.ApiResponse;
+import com.grupo.formslp.omnipages.common.dto.ApiResponse;
 import com.grupo.formslp.omnipages.chatbot.dto.ChatAnswerRequest;
 import com.grupo.formslp.omnipages.chatbot.dto.ChatAnswerResponse;
 import com.grupo.formslp.omnipages.chatbot.dto.ChatStartResponse;

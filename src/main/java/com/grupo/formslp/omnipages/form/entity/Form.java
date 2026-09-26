@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
+import com.grupo.formslp.omnipages.form.enums.FormStatus;
+import com.grupo.formslp.omnipages.form.enums.FormRenderMode;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -34,11 +36,13 @@ public class Form {
     @Column(name = "form_key", unique = true, nullable = false)
     private String formKey;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "render_mode", nullable = false)
-    private String renderMode = "CLASSIC";
+    private FormRenderMode renderMode;
 
-    @Column(nullable = false)
-    private String status = "DRAFT";
+    @Enumerated(EnumType.STRING)
+    @Column(name= "status", nullable = false)
+    private FormStatus status;
 
     @Column(name = "chatbot_greeting", columnDefinition = "TEXT")
     private String chatbotGreeting;
