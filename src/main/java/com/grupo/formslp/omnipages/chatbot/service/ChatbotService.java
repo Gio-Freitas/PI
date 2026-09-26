@@ -22,6 +22,8 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.grupo.formslp.omnipages.form.enums.FormStatus;
+import com.grupo.formslp.omnipages.form.enums.FormRenderMode;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -35,10 +37,6 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class ChatbotService {
-
-    private static final String RENDER_MODE_CHATBOT = "CHATBOT";
-    // TODO: confirmar com o módulo de formulários qual status representa um form publicado
-    private static final String FORM_STATUS_PUBLISHED = "PUBLISHED";
 
     private static final String DEFAULT_GREETING_KEY = "chatbot.greeting.default";
     private static final String DEFAULT_FAREWELL_KEY = "chatbot.farewell.default";
@@ -59,10 +57,10 @@ public class ChatbotService {
         Form form = formRepository.findByFormKeyAndDeletedAtIsNull(formKey)
                 .orElseThrow(() -> new ChatbotNotFoundException("chatbot.error.form-not-found"));
 
-        if (!RENDER_MODE_CHATBOT.equals(form.getRenderMode())) {
+        if (form.getRenderMode() != FormRenderMode.CHATBOT) {
             throw new ChatbotBusinessException("chatbot.error.form-not-chatbot");
         }
-        if (!FORM_STATUS_PUBLISHED.equals(form.getStatus())) {
+        if (form.getStatus() != FormStatus.PUBLISHED) {
             throw new ChatbotBusinessException("chatbot.error.form-inactive");
         }
 
