@@ -80,6 +80,6 @@ public class Form {
     @Column(name="created_by")
     private UUID createdBy;
 
-    @Column(name="updsated_by")
+    @Column(name="updated_by")
     private UUID updatedBy;
 }
