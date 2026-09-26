@@ -1,4 +1,4 @@
-package com.grupo.formslp.omnipages.core.domain;
+package com.grupo.formslp.omnipages.form.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

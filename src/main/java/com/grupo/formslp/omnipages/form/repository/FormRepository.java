@@ -1,6 +1,6 @@
-package com.grupo.formslp.omnipages.core.repository;
+package com.grupo.formslp.omnipages.form.repository;
 
-import com.grupo.formslp.omnipages.core.domain.Form;
+import com.grupo.formslp.omnipages.form.entity.Form;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

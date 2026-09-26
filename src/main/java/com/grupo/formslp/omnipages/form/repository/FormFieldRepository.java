@@ -1,8 +1,9 @@
-package com.grupo.formslp.omnipages.core.repository;
+package com.grupo.formslp.omnipages.form.repository;
 
-import com.grupo.formslp.omnipages.core.domain.FormField;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.grupo.formslp.omnipages.form.entity.FormField;
 
 import java.util.List;
 import java.util.Optional;
