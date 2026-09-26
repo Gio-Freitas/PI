@@ -18,6 +18,8 @@ import com.grupo.formslp.omnipages.form.repository.FormFieldRepository;
 import com.grupo.formslp.omnipages.form.repository.FormRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +40,9 @@ public class ChatbotService {
     // TODO: confirmar com o módulo de formulários qual status representa um form publicado
     private static final String FORM_STATUS_PUBLISHED = "PUBLISHED";
 
-    private static final String DEFAULT_GREETING = "Olá! Vou te fazer algumas perguntas rápidas.";
-    private static final String DEFAULT_FAREWELL = "Obrigado pelas respostas! Entraremos em contato.";
+    private static final String DEFAULT_GREETING_KEY = "chatbot.greeting.default";
+    private static final String DEFAULT_FAREWELL_KEY = "chatbot.farewell.default";
+    private static final String DEFAULT_QUESTION_KEY = "chatbot.question.default";
 
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final int MIN_PHONE_DIGITS = 10;
@@ -49,22 +52,23 @@ public class ChatbotService {
     private final ChatbotSessionRepository sessionRepository;
     private final ChatbotMessageRepository messageRepository;
     private final ChatbotEngine engine;
+    private final MessageSource messageSource;
 
     @Transactional
     public ChatStartResponse start(String formKey) {
         Form form = formRepository.findByFormKeyAndDeletedAtIsNull(formKey)
-                .orElseThrow(() -> new ChatbotNotFoundException("Formulário não encontrado."));
+                .orElseThrow(() -> new ChatbotNotFoundException("chatbot.error.form-not-found"));
 
         if (!RENDER_MODE_CHATBOT.equals(form.getRenderMode())) {
-            throw new ChatbotBusinessException("Este formulário não está configurado para o modo chatbot.");
+            throw new ChatbotBusinessException("chatbot.error.form-not-chatbot");
         }
         if (!FORM_STATUS_PUBLISHED.equals(form.getStatus())) {
-            throw new ChatbotBusinessException("Este formulário não está ativo.");
+            throw new ChatbotBusinessException("chatbot.error.form-inactive");
         }
 
         List<FormField> fields = findFields(form, form.getTenantId());
         if (fields.isEmpty()) {
-            throw new ChatbotBusinessException("Este formulário não possui campos.");
+            throw new ChatbotBusinessException("chatbot.error.form-without-fields");
         }
 
         OffsetDateTime now = OffsetDateTime.now();
@@ -76,7 +80,7 @@ public class ChatbotService {
         session.setLastActivityAt(now);
 
         List<ChatbotMessage> messages = new ArrayList<>();
-        messages.add(botMessage(session, textOrDefault(form.getChatbotGreeting(), DEFAULT_GREETING), null));
+        messages.add(botMessage(session, textOrDefault(form.getChatbotGreeting(), DEFAULT_GREETING_KEY), null));
 
         FormField first = engine.nextField(session, fields);
         session.setCurrentField(first.getName());
@@ -91,10 +95,10 @@ public class ChatbotService {
     @Transactional
     public ChatAnswerResponse answer(UUID sessionId, String answer) {
         ChatbotSession session = sessionRepository.findBySessionIdAndDeletedAtIsNull(sessionId)
-                .orElseThrow(() -> new ChatbotNotFoundException("Sessão não encontrada."));
+                .orElseThrow(() -> new ChatbotNotFoundException("chatbot.error.session-not-found"));
 
         if (session.getStatus() != ChatbotSessionStatus.ACTIVE) {
-            throw new ChatbotBusinessException("Esta conversa já foi encerrada.");
+            throw new ChatbotBusinessException("chatbot.error.session-closed");
         }
 
         // rota pública: o tenant vem da própria sessão, não do contexto da requisição
@@ -122,7 +126,7 @@ public class ChatbotService {
             session.setCurrentField(null);
             session.setStatus(ChatbotSessionStatus.COMPLETED);
             session.setCompletedAt(OffsetDateTime.now());
-            messages.add(botMessage(session, textOrDefault(form.getChatbotFarewell(), DEFAULT_FAREWELL), null));
+            messages.add(botMessage(session, textOrDefault(form.getChatbotFarewell(), DEFAULT_FAREWELL_KEY), null));
             submitLead(session);
         }
 
@@ -166,7 +170,7 @@ public class ChatbotService {
         if (field.getChatbotPrompt() != null && !field.getChatbotPrompt().isBlank()) {
             return field.getChatbotPrompt();
         }
-        return "Qual o seu " + lowerFirst(field.getLabel()) + "?";
+        return i18n(DEFAULT_QUESTION_KEY, lowerFirst(field.getLabel()));
     }
 
     // "Nome" -> "nome", mas siglas como "CPF" continuam iguais
@@ -177,8 +181,13 @@ public class ChatbotService {
         return Character.toLowerCase(label.charAt(0)) + label.substring(1);
     }
 
-    private String textOrDefault(String text, String fallback) {
-        return text != null && !text.isBlank() ? text : fallback;
+    // texto configurado no formulário tem prioridade; senão usa o padrão do messages.properties
+    private String textOrDefault(String text, String fallbackKey) {
+        return text != null && !text.isBlank() ? text : i18n(fallbackKey);
+    }
+
+    private String i18n(String key, Object... args) {
+        return messageSource.getMessage(key, args, LocaleContextHolder.getLocale());
     }
 
     private ChatbotMessage botMessage(ChatbotSession session, String content, String fieldName) {
