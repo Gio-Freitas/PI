@@ -39,7 +39,7 @@ public class FormField {
     @Column(nullable = false, length = 50)
     private String type;
 
-    @Column(name = "position_order", nullable = false)
+    @Column(name = "position", nullable = false)
     private Integer position;
 
     @Column(nullable = false)

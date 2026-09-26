@@ -14,7 +14,7 @@ public interface FormRepository extends JpaRepository<Form, UUID>{
     // Área administrativa, acessa após validação token JWT e de tenant
 
     // lista todos os forms do cliente, paginados, ignorando os deletados
-    Page<Form> findAllByTenantIdAndDeleteAtIsNull(UUID tenantId, Pageable pageable);
+    Page<Form> findAllByTenantIdAndDeletedAtIsNull(UUID tenantId, Pageable pageable);
     // busca um form específico garantindo que ele pertence àquele tenant
     Optional<Form> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
 
