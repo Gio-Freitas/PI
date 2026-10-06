@@ -2,11 +2,13 @@ package com.grupo.formslp.omnipages.chatbot.exception;
 
 import com.grupo.formslp.omnipages.chatbot.controller.PublicChatController;
 import com.grupo.formslp.omnipages.common.dto.ApiResponse;
+import com.grupo.formslp.omnipages.common.dto.ApiError;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -35,17 +37,26 @@ public class ChatbotExceptionHandler {
         return ApiResponse.error(i18n(ex.getMessageKey()), List.of());
     }
 
-    // a mensagem de cada campo já vem traduzida pelo Bean Validation, que usa o mesmo messages.properties
+    // a mensagem de cada campo já vem traduzida pelo Bean Validation, que usa o
+    // mesmo messages.properties
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> invalidBody(MethodArgumentNotValidException ex) {
-        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+        List<ApiError> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::toApiError)
                 .toList();
         return ApiResponse.error(i18n(INVALID_REQUEST_KEY), errors);
     }
 
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    private ApiError toApiError(FieldError e) {
+        String codigo = switch (e.getCode() == null ? "" : e.getCode()) {
+            case "NotNull", "NotBlank", "NotEmpty" -> "CAMPO_OBRIGATORIO";
+            default -> "CAMPO_INVALIDO";
+        };
+        return new ApiError(e.getField(), codigo, e.getDefaultMessage());
+    }
+
+    @ExceptionHandler({ HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> malformedRequest(Exception ex) {
         return ApiResponse.error(i18n(INVALID_REQUEST_KEY), List.of());
