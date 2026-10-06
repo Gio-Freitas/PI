@@ -5,6 +5,7 @@ import com.grupo.formslp.omnipages.page.dto.LandingPageRequest;
 import com.grupo.formslp.omnipages.page.dto.LandingPageResponse;
 import com.grupo.formslp.omnipages.page.dto.LandingPageSummaryResponse;
 import com.grupo.formslp.omnipages.page.dto.PageResult;
+import com.grupo.formslp.omnipages.page.service.LandingPagePublicationService;
 import com.grupo.formslp.omnipages.page.service.LandingPageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.UUID;
 
-// Área administrativa das landing pages (telas 1 e 3), rotas de contratos/landing.yaml
+// Área administrativa das landing pages (telas 1, 2 e 3), rotas de contratos/landing.yaml
 // PROVISÓRIO: o tenant vem do cabeçalho X-Tenant-Id até a validação do token JWT entrar no módulo;
 // depois ele passa a sair do token e o cabeçalho deixa de existir
 @RestController
@@ -27,6 +28,7 @@ public class LandingPageController {
     static final String TENANT_HEADER = "X-Tenant-Id";
 
     private final LandingPageService pageService;
+    private final LandingPagePublicationService publicationService;
     private final MessageSource messageSource;
 
     @GetMapping
@@ -63,6 +65,21 @@ public class LandingPageController {
     public ApiResponse<Void> delete(@RequestHeader(TENANT_HEADER) UUID tenantId, @PathVariable UUID id) {
         pageService.delete(tenantId, id);
         return ApiResponse.ok(null, i18n("page.response.deleted"));
+    }
+
+    @PostMapping("/{id}/publicar")
+    public ApiResponse<LandingPageResponse> publish(@RequestHeader(TENANT_HEADER) UUID tenantId, @PathVariable UUID id) {
+        return ApiResponse.ok(publicationService.publish(tenantId, id), i18n("page.response.published"));
+    }
+
+    @PostMapping("/{id}/despublicar")
+    public ApiResponse<LandingPageResponse> unpublish(@RequestHeader(TENANT_HEADER) UUID tenantId, @PathVariable UUID id) {
+        return ApiResponse.ok(publicationService.unpublish(tenantId, id), i18n("page.response.unpublished"));
+    }
+
+    @PostMapping("/{id}/arquivar")
+    public ApiResponse<LandingPageResponse> archive(@RequestHeader(TENANT_HEADER) UUID tenantId, @PathVariable UUID id) {
+        return ApiResponse.ok(publicationService.archive(tenantId, id), i18n("page.response.archived"));
     }
 
     private String i18n(String key) {

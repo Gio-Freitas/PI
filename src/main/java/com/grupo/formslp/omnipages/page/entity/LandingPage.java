@@ -58,6 +58,11 @@ public class LandingPage {
     @Column(name = "published_html", columnDefinition = "TEXT")
     private String publishedHtml;
 
+    // SEO congelado junto com o HTML: editar o SEO do rascunho não muda o que está no ar
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "published_seo", columnDefinition = "jsonb")
+    private Map<String, Object> publishedSeo;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "published_form_keys", columnDefinition = "jsonb")
     private List<String> publishedFormKeys;

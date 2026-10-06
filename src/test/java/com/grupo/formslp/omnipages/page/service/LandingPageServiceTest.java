@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,7 +53,7 @@ class LandingPageServiceTest {
     @BeforeEach
     void setUp() {
         service = new LandingPageService(pageRepository);
-        lenient().when(pageRepository.saveAndFlush(any(LandingPage.class))).thenAnswer(invocation -> {
+        lenient().when(pageRepository.save(any(LandingPage.class))).thenAnswer(invocation -> {
             LandingPage page = invocation.getArgument(0);
             if (page.getId() == null) {
                 page.setId(PAGE_ID);
@@ -66,7 +67,8 @@ class LandingPageServiceTest {
         LandingPageResponse response = service.create(TENANT_ID, request("black-friday-2026"));
 
         ArgumentCaptor<LandingPage> saved = ArgumentCaptor.forClass(LandingPage.class);
-        verify(pageRepository).saveAndFlush(saved.capture());
+        verify(pageRepository).save(saved.capture());
+        verify(pageRepository).flush();
         LandingPage page = saved.getValue();
         assertEquals(TENANT_ID, page.getTenantId());
         assertEquals(LandingPageStatus.DRAFT, page.getStatus());
@@ -84,22 +86,22 @@ class LandingPageServiceTest {
         when(pageRepository.existsBySlugAndDeletedAtIsNull("black-friday-2026")).thenReturn(true);
 
         assertThrows(SlugAlreadyInUseException.class, () -> service.create(TENANT_ID, request("black-friday-2026")));
-        verify(pageRepository, never()).saveAndFlush(any());
+        verify(pageRepository, never()).save(any());
     }
 
     @Test
     void createTurnsUniqueIndexViolationIntoSlugConflict() {
         // duas requisições simultâneas passam pela checagem; o índice único do banco recusa a segunda
-        when(pageRepository.saveAndFlush(any(LandingPage.class)))
-                .thenThrow(new DataIntegrityViolationException("violates unique constraint \"uq_landing_pages_slug\""));
+        doThrow(new DataIntegrityViolationException("violates unique constraint \"uq_landing_pages_slug\""))
+                .when(pageRepository).flush();
 
         assertThrows(SlugAlreadyInUseException.class, () -> service.create(TENANT_ID, request("black-friday-2026")));
     }
 
     @Test
     void createDoesNotHideOtherIntegrityErrors() {
-        when(pageRepository.saveAndFlush(any(LandingPage.class)))
-                .thenThrow(new DataIntegrityViolationException("null value in column \"name\""));
+        doThrow(new DataIntegrityViolationException("null value in column \"name\""))
+                .when(pageRepository).flush();
 
         assertThrows(DataIntegrityViolationException.class, () -> service.create(TENANT_ID, request("black-friday-2026")));
     }
@@ -118,7 +120,7 @@ class LandingPageServiceTest {
         page.setStatus(LandingPageStatus.PUBLISHED);
         page.setPublishedHtml("<html>versão no ar</html>");
         page.setHasUnpublishedChanges(false);
-        when(pageRepository.findByIdAndTenantIdAndDeletedAtIsNull(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(page));
+        when(pageRepository.findForUpdate(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(page));
 
         LandingPageResponse response = service.update(TENANT_ID, PAGE_ID, request("black-friday-2026"));
 
@@ -129,7 +131,7 @@ class LandingPageServiceTest {
 
     @Test
     void updateRejectsSlugOfAnotherPage() {
-        when(pageRepository.findByIdAndTenantIdAndDeletedAtIsNull(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(existingPage()));
+        when(pageRepository.findForUpdate(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(existingPage()));
         when(pageRepository.existsBySlugAndIdNotAndDeletedAtIsNull("ja-existe", PAGE_ID)).thenReturn(true);
 
         assertThrows(SlugAlreadyInUseException.class, () -> service.update(TENANT_ID, PAGE_ID, request("ja-existe")));
@@ -138,12 +140,12 @@ class LandingPageServiceTest {
     @Test
     void deleteIsLogical() {
         LandingPage page = existingPage();
-        when(pageRepository.findByIdAndTenantIdAndDeletedAtIsNull(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(page));
+        when(pageRepository.findForUpdate(PAGE_ID, TENANT_ID)).thenReturn(Optional.of(page));
 
         service.delete(TENANT_ID, PAGE_ID);
 
         assertNotNull(page.getDeletedAt());
-        verify(pageRepository).save(page);
+        verify(pageRepository).flush();
         verify(pageRepository, never()).delete(any(LandingPage.class));
     }
 

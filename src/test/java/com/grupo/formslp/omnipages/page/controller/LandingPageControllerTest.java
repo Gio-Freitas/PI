@@ -5,6 +5,8 @@ import com.grupo.formslp.omnipages.page.dto.LandingPageResponse;
 import com.grupo.formslp.omnipages.page.enums.LandingPageStatus;
 import com.grupo.formslp.omnipages.page.exception.PageExceptionHandler;
 import com.grupo.formslp.omnipages.page.exception.SlugAlreadyInUseException;
+import com.grupo.formslp.omnipages.page.exception.PageStateException;
+import com.grupo.formslp.omnipages.page.service.LandingPagePublicationService;
 import com.grupo.formslp.omnipages.page.service.LandingPageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,8 @@ class LandingPageControllerTest {
 
     @MockitoBean
     private LandingPageService pageService;
+    @MockitoBean
+    private LandingPagePublicationService publicationService;
 
     @Test
     void createReturns201WithLocationAndContractFieldNames() throws Exception {
@@ -87,6 +91,29 @@ class LandingPageControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Este endereço já está em uso."));
+    }
+
+    @Test
+    void publishAnswersWithThePublishedPage() throws Exception {
+        when(publicationService.publish(TENANT_ID, PAGE_ID)).thenReturn(new LandingPageResponse(PAGE_ID, "Black Friday",
+                "black-friday-2026", LandingPageStatus.PUBLISHED, null, null, null, null, false, List.of(), null, null, null, null));
+
+        mockMvc.perform(post("/api/landing/paginas/" + PAGE_ID + "/publicar").header("X-Tenant-Id", TENANT_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLICADA"))
+                .andExpect(jsonPath("$.data.temAlteracaoNaoPublicada").value(false))
+                .andExpect(jsonPath("$.message").value("Landing page publicada."));
+    }
+
+    @Test
+    void stateRuleViolationIs422WithTheContractCode() throws Exception {
+        when(publicationService.publish(TENANT_ID, PAGE_ID))
+                .thenThrow(new PageStateException("PAGINA_SEM_BLOCOS", "page.state.no-blocks"));
+
+        mockMvc.perform(post("/api/landing/paginas/" + PAGE_ID + "/publicar").header("X-Tenant-Id", TENANT_ID))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.message").value("Adicione pelo menos um bloco antes de publicar."))
+                .andExpect(jsonPath("$.errors[0]").value("PAGINA_SEM_BLOCOS"));
     }
 
     private static LandingPageResponse response() {

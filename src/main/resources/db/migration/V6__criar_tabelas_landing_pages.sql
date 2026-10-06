@@ -9,6 +9,7 @@ CREATE TABLE landing.landing_pages (
     theme JSONB, -- cor primária, cor de fundo e fonte
     has_unpublished_changes BOOLEAN NOT NULL DEFAULT TRUE, -- o rascunho mudou depois da última publicação
     published_html TEXT, -- HTML congelado gerado na publicação; é o que o visitante recebe
+    published_seo JSONB, -- SEO congelado na publicação; editar o SEO do rascunho não muda o que está no ar
     published_form_keys JSONB, -- chaves públicas dos formulários embutidos na versão publicada, usadas pelo form.js
     published_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

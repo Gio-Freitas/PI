@@ -53,6 +53,12 @@ public class PageExceptionHandler {
         return ApiResponse.error(i18n(INVALID_REQUEST_KEY), errors);
     }
 
+    @ExceptionHandler(PageStateException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+    public ApiResponse<Void> invalidState(PageStateException ex) {
+        return ApiResponse.error(i18n(ex.getMessageKey()), List.of(ex.getCode()));
+    }
+
     @ExceptionHandler(BlockValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> invalidBlock(BlockValidationException ex) {

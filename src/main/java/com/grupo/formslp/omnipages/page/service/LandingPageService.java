@@ -64,7 +64,7 @@ public class LandingPageService {
         page.setTenantId(tenantId);
         page.setStatus(LandingPageStatus.DRAFT);
         applySettings(page, request);
-        return LandingPageResponse.from(saveCheckingSlug(page));
+        return LandingPageResponse.from(flushCheckingSlug(pageRepository.save(page)));
     }
 
     @Transactional(readOnly = true)
@@ -72,24 +72,31 @@ public class LandingPageService {
         return LandingPageResponse.from(findPage(tenantId, pageId));
     }
 
-    // editar configurações não mexe na versão publicada: só marca que o rascunho mudou
+    // editar configurações não mexe na versão publicada: só marca que o rascunho mudou.
+    // Trava a página como a publicação faz: o Hibernate grava todas as colunas, e um PUT lido antes
+    // de uma publicação e gravado depois dela tiraria a página do ar
     @Transactional
     public LandingPageResponse update(UUID tenantId, UUID pageId, LandingPageRequest request) {
-        LandingPage page = findPage(tenantId, pageId);
+        LandingPage page = lockPage(tenantId, pageId);
         if (pageRepository.existsBySlugAndIdNotAndDeletedAtIsNull(request.slug(), pageId)) {
             throw new SlugAlreadyInUseException(request.slug());
         }
         applySettings(page, request);
         page.setHasUnpublishedChanges(true);
-        return LandingPageResponse.from(saveCheckingSlug(page));
+        return LandingPageResponse.from(flushCheckingSlug(page));
     }
 
     // exclusão lógica: a página some da lista e da área pública, e o slug fica livre
     @Transactional
     public void delete(UUID tenantId, UUID pageId) {
-        LandingPage page = findPage(tenantId, pageId);
+        LandingPage page = lockPage(tenantId, pageId);
         page.setDeletedAt(OffsetDateTime.now());
-        pageRepository.save(page);
+        pageRepository.flush();
+    }
+
+    private LandingPage lockPage(UUID tenantId, UUID pageId) {
+        return pageRepository.findForUpdate(pageId, tenantId)
+                .orElseThrow(() -> new PageNotFoundException(PAGE_NOT_FOUND_KEY));
     }
 
     LandingPage findPage(UUID tenantId, UUID pageId) {
@@ -107,9 +114,10 @@ public class LandingPageService {
 
     // a checagem de slug antes de salvar não cobre duas requisições simultâneas; nesse caso
     // quem recusa é o índice único do banco, e a resposta continua sendo 409
-    private LandingPage saveCheckingSlug(LandingPage page) {
+    private LandingPage flushCheckingSlug(LandingPage page) {
         try {
-            return pageRepository.saveAndFlush(page);
+            pageRepository.flush();
+            return page;
         } catch (DataIntegrityViolationException ex) {
             String cause = ex.getMostSpecificCause().getMessage();
             if (cause != null && cause.contains(SLUG_UNIQUE_INDEX)) {
