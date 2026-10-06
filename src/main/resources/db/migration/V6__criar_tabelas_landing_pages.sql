@@ -37,3 +37,4 @@ CREATE TABLE landing.landing_page_blocks (
 CREATE UNIQUE INDEX uq_landing_pages_slug ON landing.landing_pages(slug) WHERE deleted_at IS NULL;
 CREATE INDEX idx_landing_pages_tenant ON landing.landing_pages(tenant_id);
 CREATE INDEX idx_landing_page_blocks_page ON landing.landing_page_blocks(page_id);
+CREATE INDEX idx_landing_page_blocks_form ON landing.landing_page_blocks(form_id); -- saber em quais páginas um formulário aparece sem varrer a tabela
