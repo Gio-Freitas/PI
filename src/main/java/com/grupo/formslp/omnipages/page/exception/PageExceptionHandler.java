@@ -53,6 +53,12 @@ public class PageExceptionHandler {
         return ApiResponse.error(i18n(INVALID_REQUEST_KEY), errors);
     }
 
+    @ExceptionHandler(BlockValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> invalidBlock(BlockValidationException ex) {
+        return ApiResponse.error(i18n(INVALID_REQUEST_KEY), List.of(ex.getField() + ": " + i18n(ex.getMessageKey())));
+    }
+
     @ExceptionHandler(InvalidQueryParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> invalidQuery(InvalidQueryParameterException ex) {
