@@ -1,5 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS landing;
-
 CREATE TABLE landing.forms (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
